@@ -2,7 +2,7 @@
 
 static inline void outb(uint16_t, uint8_t);
 static inline uint8_t inb(uint16_t);
-void serial_init(void) {
+void serial_initialize(void) {
     outb(COM1 + 1, 0x00);
     outb(COM1 + 3, 0x80);
     outb(COM1 + 0, 0x01);

@@ -1,2 +1,4 @@
-/iso_root
 /.vscode
+
+/iso_root
+*.o

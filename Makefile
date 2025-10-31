@@ -1,4 +1,4 @@
-CFLAGS?=-O2 -g
+CFLAGS?=-O0 -g
 CFLAGS := $(CFLAGS) -Wall -Wextra -ffreestanding -fno-builtin -fno-stack-protector -mno-red-zone
 
 ARCH := x86_64
@@ -9,13 +9,13 @@ INCLUDE_DIR := include
 KLIBC_DIR := klibc
 KERNEL_DIR := kernel
 
-CC := ~/x86_64-elf-7.5.0-Linux-x86_64/bin/x86_64-elf-gcc
-CXX := ~/x86_64-elf-7.5.0-Linux-x86_64/bin/x86_64-elf-g++
-AS := ~/x86_64-elf-7.5.0-Linux-x86_64/bin/x86_64-elf-as
-LD := ~/x86_64-elf-7.5.0-Linux-x86_64/bin/x86_64-elf-ld
+CC := x86_64-elf-gcc
+CXX := x86_64-elf-g++
+AS := x86_64-elf-as
+LD := x86_64-elf-ld
 
 CFLAGS += -I$(INCLUDE_DIR) -I$(KLIBC_DIR)/include -I$(LIMINE_DIR) -mcmodel=kernel
-CXXFLAGS := $(CFLAGS) -fno-exceptions -fno-rtti -std=c++11
+CXXFLAGS := $(CFLAGS) -fno-exceptions -fno-rtti -std=c++20
 CFLAGS += -std=c99
 
 KLIBC_C_SOURCES := $(wildcard $(KLIBC_DIR)/*.c)
@@ -55,7 +55,7 @@ iso: $(KERNEL)
 	cp $(LIMINE_DIR)/limine-bios.sys iso_root/
 	cp $(LIMINE_DIR)/limine-bios-cd.bin iso_root/
 	cp $(LIMINE_DIR)/limine-uefi-cd.bin iso_root/
-	cp $(LIMINE_CONF) iso_root/
+	cp $(LIMINE_CONF) iso_root/boot
 	
 	xorriso -as mkisofs -b limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \

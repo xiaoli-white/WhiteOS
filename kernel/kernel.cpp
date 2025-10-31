@@ -1,16 +1,21 @@
 #include <stdio.h>
 
 #include <kernel/serial.h>
+#include <kernel/terminal.h>
 #include <kernel/memory.h>
+#include <limine.h>
+
 
 extern "C" void kernel_main(void) {
-	serial_init();
-	printf("Hello, World!\n");
+	serial_initialize();
+	terminal_initialize();
 	
-	get_memory_info();
+	getMemoryInfo();
 
-	PMM* pmm = getPMM();
-	pmm->init();
+	PhysicalMemoryManager* pm = pmm();
+	pm->initialize();
+	VirtualMemoryManager* vm = vmm();
+	vm->initialize();	
 	
 	for (;;);
 }
