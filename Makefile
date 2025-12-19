@@ -7,7 +7,7 @@ LIMINE_DIR := limine
 
 INCLUDE_DIR := include
 KLIBC_DIR := klibc
-KERNEL_DIR := kernel
+KERNEL_DIR := src/kernel
 
 CC := x86_64-elf-gcc
 CXX := x86_64-elf-g++

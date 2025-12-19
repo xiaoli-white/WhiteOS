@@ -111,8 +111,9 @@ void terminal_putchar(char c) {
     
     size_t char_width = FONT_WIDTH;
     size_t char_height = FONT_HEIGHT;
-    size_t screen_width = framebuffer->width;
-    size_t screen_height = framebuffer->height;
+    struct limine_framebuffer *frameb = framebuffer;
+    size_t screen_width = frameb->width;
+    size_t screen_height = frameb->height;
     
     switch (c) {
         case '\n':

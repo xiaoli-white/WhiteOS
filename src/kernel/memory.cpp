@@ -255,12 +255,12 @@ void PhysicalMemoryManager::initialize()
   printf("  Free memory: %u MB\n", getFreeMemory() / 1024 / 1024);
 }
 
-void *PhysicalMemoryManager::alloc()
+uint64_t PhysicalMemoryManager::alloc()
 {
   return allocBlocks(1);
 }
 
-void *PhysicalMemoryManager::allocBlocks(size_t blocks)
+uint64_t PhysicalMemoryManager::allocBlocks(size_t blocks)
 {
   if (blocks == 0)
     return NULL;
@@ -285,7 +285,7 @@ void *PhysicalMemoryManager::allocBlocks(size_t blocks)
           setBitmap(j);
           usedBlocks++;
         }
-        return (void *)(start_block * PMM_BLOCK_SIZE);
+        return start_block * PMM_BLOCK_SIZE;
       }
     }
     else
@@ -295,7 +295,7 @@ void *PhysicalMemoryManager::allocBlocks(size_t blocks)
   }
 
   printf("PMM: Out of memory! Requested %lu blocks\n", blocks);
-  return nullptr;
+  return 0;
 }
 
 void PhysicalMemoryManager::free(void *ptr)
@@ -358,14 +358,14 @@ VirtualMemoryManager *VirtualMemoryManager::getInstance()
   return &instance;
 }
 
-VirtualMemoryManager::PageTable *VirtualMemoryManager::get_or_create_table(PageTableEntry *entry, uint64_t flags)
+PageTable *VirtualMemoryManager::get_or_create_table(PageTableEntry *entry, uint64_t flags)
 {
   if (entry->is_present())
   {
-    return (PageTable *)(entry->get_address());
+    return (PageTable *)(entry->get_pfn());
   }
 
-  void *physical_addr = pmm()->alloc();
+  void *physical_addr = (void *)pmm()->alloc();
   if (!physical_addr)
   {
     return nullptr;
@@ -374,7 +374,7 @@ VirtualMemoryManager::PageTable *VirtualMemoryManager::get_or_create_table(PageT
   PageTable *table = (PageTable *)physical_addr;
   table->clear();
 
-  entry->set(reinterpret_cast<uint64_t>(physical_addr), flags | PRESENT | WRITABLE);
+  entry->set_pfn(reinterpret_cast<uint64_t>(physical_addr), flags | PRESENT | WRITABLE);
   return table;
 }
 
@@ -382,19 +382,11 @@ void VirtualMemoryManager::initialize()
 {
   printf("VMM: Initializing virtual memory...\n");
 
-  void *pml4_physical = pmm()->alloc();
-  pml4_table = (PageTable *)pml4_physical;
-  pml4_table->clear();
+  uint64_t cr3;
+  asm volatile("mov %%cr3, %0" : "=r"(cr3));
 
-  initialize_kernel_mappings();
-
-  initialize_heap();
-
-  uint64_t rip;
-  asm volatile("lea (%%rip), %0" : "=r"(rip));
-  printf("RIP: %p, pml4: %p\n", rip, pml4_physical);
-
-  asm volatile("mov %0, %%cr3" ::"r"(pml4_physical));
+  pml4_table = clonePageTable((PageTable *)(cr3 & ~0xFFF));
+  asm volatile("mov %0, %%cr3" ::"r"(pml4_table));
 
   printf("VMM: Virtual memory initialized\n");
 }
@@ -413,7 +405,7 @@ void VirtualMemoryManager::initialize_kernel_mappings()
       uint64_t physical_base = entry->base;
       uint64_t virtual_base = 0xFFFFFFFF80000000 + (physical_base & 0xFFFFFFFF);
       uint64_t pages = (entry->length + PAGE_SIZE - 1) / PAGE_SIZE;
-      printf ("VMM: Mapping kernel region: %p - %p to %p - %p\n", physical_base, physical_base + entry->length, virtual_base, virtual_base + entry->length);
+      printf("VMM: Mapping kernel region: %p - %p to %p - %p\n", physical_base, physical_base + entry->length, virtual_base, virtual_base + entry->length);
 
       for (uint64_t j = 0; j < pages; j++)
       {
@@ -470,7 +462,7 @@ void VirtualMemoryManager::map_framebuffer(struct limine_framebuffer *fb)
 void VirtualMemoryManager::initialize_heap()
 {
   const size_t heap_size = 16 * 1024 * 1024;
-  void *heap_physical = pmm()->allocBlocks(heap_size / PAGE_SIZE);
+  void *heap_physical = physicalToVirtual(pmm()->allocBlocks(heap_size / PAGE_SIZE));
 
   if (!heap_physical)
   {
@@ -524,7 +516,7 @@ void VirtualMemoryManager::map_page(uint64_t virtual_addr, uint64_t physical_add
     return;
 
   PageTableEntry *pt_entry = pt_table->get_entry(pt_index);
-  pt_entry->set(physical_addr, flags);
+  pt_entry->set_pfn(physical_addr, flags);
 
   invalidate_tlb(virtual_addr);
 }
@@ -540,22 +532,22 @@ void VirtualMemoryManager::unmap_page(uint64_t virtual_addr)
   if (!pml4_entry->is_present())
     return;
 
-  PageTable *pdp_table = (PageTable *)(pml4_entry->get_address());
+  PageTable *pdp_table = (PageTable *)(pml4_entry->get_pfn());
   PageTableEntry *pdp_entry = pdp_table->get_entry(pdp_index);
   if (!pdp_entry->is_present())
     return;
 
-  PageTable *pd_table = (PageTable *)(pdp_entry->get_address());
+  PageTable *pd_table = (PageTable *)(pdp_entry->get_pfn());
   PageTableEntry *pd_entry = pd_table->get_entry(pd_index);
   if (!pd_entry->is_present())
     return;
 
-  PageTable *pt_table = (PageTable *)(pd_entry->get_address());
+  PageTable *pt_table = (PageTable *)(pd_entry->get_pfn());
   PageTableEntry *pt_entry = pt_table->get_entry(pt_index);
 
   if (pt_entry->is_present())
   {
-    pmm()->free(reinterpret_cast<void *>(pt_entry->get_address()));
+    pmm()->free(reinterpret_cast<void *>(pt_entry->get_pfn()));
     pt_entry->value = 0;
     invalidate_tlb(virtual_addr);
   }
@@ -572,22 +564,22 @@ uint64_t VirtualMemoryManager::get_physical_address(uint64_t virtual_addr)
   if (!pml4_entry->is_present())
     return 0;
 
-  PageTable *pdp_table = (PageTable *)(pml4_entry->get_address());
+  PageTable *pdp_table = (PageTable *)(pml4_entry->get_pfn());
   PageTableEntry *pdp_entry = pdp_table->get_entry(pdp_index);
   if (!pdp_entry->is_present())
     return 0;
 
-  PageTable *pd_table = (PageTable *)(pdp_entry->get_address());
+  PageTable *pd_table = (PageTable *)(pdp_entry->get_pfn());
   PageTableEntry *pd_entry = pd_table->get_entry(pd_index);
   if (!pd_entry->is_present())
     return 0;
 
-  PageTable *pt_table = (PageTable *)(pd_entry->get_address());
+  PageTable *pt_table = (PageTable *)(pd_entry->get_pfn());
   PageTableEntry *pt_entry = pt_table->get_entry(pt_index);
 
   if (pt_entry->is_present())
   {
-    return pt_entry->get_address() + (virtual_addr & 0xFFF);
+    return pt_entry->get_pfn() + (virtual_addr & 0xFFF);
   }
 
   return 0;
@@ -701,7 +693,58 @@ void VirtualMemoryManager::print_page_tables()
   {
     if (pml4_table->entries[i].is_present())
     {
-      printf("PML4[%lu]: 0x%llx\n", i, pml4_table->entries[i].get_address());
+      printf("PML4[%lu]: 0x%llx\n", i, pml4_table->entries[i].get_pfn());
     }
   }
+}
+PageTable *VirtualMemoryManager::clonePageTable(PageTable *src)
+{
+  PageTable *dst = (PageTable *)(pmm()->alloc());
+  if (dst == nullptr)
+    return nullptr;
+  dst->clear();
+  copyPageTable(src, dst, 4);
+  return dst;
+}
+void VirtualMemoryManager::copyTable(PageTable *dst, PageTable *src)
+{
+  memcpy(dst, src, sizeof(PageTable));
+}
+void VirtualMemoryManager::copyPageTable(PageTable *src, PageTable *dst, int level)
+{
+  copyTable(dst, src);
+
+  if (level > 1)
+  {
+    for (int i = 0; i < 512; ++i)
+    {
+      PageTableEntry &e = dst->entries[i];
+      if (!e.is_present())
+        continue;
+
+      if ((level == 3 && (e.value & HUGE_PAGE)) ||
+          (level == 2 && (e.value & HUGE_PAGE)))
+        continue;
+
+      uint64_t childPhys = pmm()->alloc();
+      copyPageTable((PageTable *)(e.get_pfn() << 12), (PageTable *)childPhys, level - 1);
+      if (childPhys == 0)
+        return;
+      e.set_pfn(childPhys >> 12, e.get_flags());
+    }
+  }
+}
+
+void *VirtualMemoryManager::physicalToVirtual(uint64_t physical_addr)
+{
+  if (physical_addr == 0)
+    return nullptr;
+  return (void *)(physical_addr + hhdm_request.response->offset);
+}
+
+uint64_t VirtualMemoryManager::virtualToPhysical(void *virtual_addr)
+{
+  if (virtual_addr == nullptr)
+    return 0;
+  return (uint64_t)virtual_addr - hhdm_request.response->offset;
 }

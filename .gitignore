@@ -2,3 +2,6 @@
 
 /iso_root
 *.o
+
+/kernel.bin
+/WhiteOS.iso

@@ -7,6 +7,9 @@
 #define PAGE_SIZE 4096
 #define PMM_BLOCK_SIZE PAGE_SIZE
 
+#define PTE_FRAME_MASK 0x000FFFFFFFFFF000
+#define PTE_FLAGS_MASK 0xFFF
+
 enum PhysicalMemoryType
 {
   MEMORY_USABLE = 1,
@@ -20,10 +23,10 @@ class PhysicalMemoryManager
 {
 public:
   static PhysicalMemoryManager *getInstance();
-  
+
   void initialize();
-  void *alloc();
-  void *allocBlocks(size_t);
+  uint64_t alloc();
+  uint64_t allocBlocks(size_t);
   void free(void *);
   void freeBlocks(void *, size_t);
   size_t getUsableMemory();
@@ -58,11 +61,45 @@ enum PageTableFlags
   GLOBAL = 1 << 8,
   NO_EXECUTE = 1ULL << 63
 };
+struct PageTableEntry
+{
+  uint64_t value;
+  void set_pfn(uint64_t pfn, uint64_t flags)
+  {
+    value = (pfn << 12) | (flags & 0xFFF);
+  }
 
+  bool is_present() const { return value & PRESENT; }
+  uint64_t get_pfn() const { return (value >> 12) & ((1ULL << 40) - 1); }
+  uint64_t get_flags() const { return value & 0xFFF; }
+
+  bool is_user() const { return value & USER_ACCESS; }
+  bool is_writable() const { return value & WRITABLE; }
+  bool is_dirty() const { return value & DIRTY; }
+  bool is_accessed() const { return value & ACCESSED; }
+};
+
+struct PageTable
+{
+  PageTableEntry entries[512];
+
+  PageTableEntry *get_entry(size_t index)
+  {
+    return &entries[index];
+  }
+
+  void clear()
+  {
+    for (size_t i = 0; i < 512; i++)
+    {
+      entries[i].value = 0;
+    }
+  }
+};
 class VirtualMemoryManager
 {
 public:
-  static VirtualMemoryManager* getInstance();
+  static VirtualMemoryManager *getInstance();
 
   void initialize();
 
@@ -78,9 +115,11 @@ public:
 
   void print_memory_map();
   void print_page_tables();
-  
-  // 新增映射帧缓冲区的方法
-  void map_framebuffer(struct limine_framebuffer* fb);
+
+  void map_framebuffer(struct limine_framebuffer *fb);
+
+  void *physicalToVirtual(uint64_t physical_addr);
+  uint64_t virtualToPhysical(void *virtual_addr);
 
 private:
   VirtualMemoryManager() = default;
@@ -88,38 +127,6 @@ private:
 
   VirtualMemoryManager(const VirtualMemoryManager &) = delete;
   VirtualMemoryManager &operator=(const VirtualMemoryManager &) = delete;
-
-  struct PageTableEntry
-  {
-    uint64_t value;
-
-    void set(uint64_t physical_addr, uint64_t flags)
-    {
-      value = (physical_addr & ~0xFFF) | (flags & 0xFFF) | PRESENT;
-    }
-
-    bool is_present() const { return value & PRESENT; }
-    uint64_t get_address() const { return value & ~0xFFF; }
-    uint64_t get_flags() const { return value & 0xFFF; }
-  };
-
-  struct PageTable
-  {
-    PageTableEntry entries[512];
-
-    PageTableEntry *get_entry(size_t index)
-    {
-      return &entries[index];
-    }
-
-    void clear()
-    {
-      for (size_t i = 0; i < 512; i++)
-      {
-        entries[i].value = 0;
-      }
-    }
-  };
 
   PageTable *pml4_table;
 
@@ -140,13 +147,17 @@ private:
   void initialize_heap();
   HeapBlock *find_free_block(size_t size);
   void merge_free_blocks();
+
+  PageTable *clonePageTable(PageTable *table);
+  void copyTable(PageTable *dst, PageTable *src);
+  void copyPageTable(PageTable *src, PageTable *dst, int level);
 };
 
-inline PhysicalMemoryManager* pmm()
+inline PhysicalMemoryManager *pmm()
 {
   return PhysicalMemoryManager::getInstance();
 }
-inline VirtualMemoryManager* vmm()
+inline VirtualMemoryManager *vmm()
 {
   return VirtualMemoryManager::getInstance();
 }
