@@ -1,0 +1,18 @@
+[package]
+name = "WhiteOS"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+limine = "0.6.3"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[[bin]]
+name = "WhiteOS"
+test = false
+bench = false
