@@ -1,15 +1,14 @@
 #![no_std]
 #![no_main]
 
-mod framebuffer;
+mod console;
 
 use core::arch::asm;
 use core::panic::PanicInfo;
 
 use limine::BaseRevision;
-use spin::Mutex;
 
-use crate::framebuffer::Console;
+use crate::console::{Console, init_console, with_console};
 use core::fmt::Write;
 
 #[used]
@@ -33,8 +32,11 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn kernel_main() -> ! {
     assert!(BASE_REVISION.is_supported());
 
-    let mut console = Console::new();
-    write!(console, "Hello, kernel!\n");
+    init_console();
+
+    with_console(|console| {
+        write!(console, "Hello, kernel!");
+    });
     /*
     if let Some(framebuffer) = FRAMEBUFFER_REQUEST
         .response()

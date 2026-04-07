@@ -1,5 +1,6 @@
 use core::fmt;
 use limine::{framebuffer::Framebuffer, request::FramebufferRequest};
+use spin::{Mutex, Once};
 
 const FONT_FILE: &[u8] = include_bytes!("../../fonts/Lat7-Terminus16.psf");
 
@@ -59,7 +60,7 @@ pub fn get_framebuffer() -> &'static Framebuffer {
 }
 
 impl Console {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let framebuffer = get_framebuffer();
         Self {
             x: 0,
@@ -161,4 +162,18 @@ impl fmt::Write for Console {
         }
         Ok(())
     }
+}
+
+static CONSOLE: Once<Mutex<Console>> = Once::new();
+
+pub fn init_console() {
+    CONSOLE.call_once(|| Mutex::new(Console::new()));
+}
+pub fn with_console<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut Console) -> R,
+{
+    let console = CONSOLE.get().expect("Console not initialized");
+    let mut guard = console.lock();
+    f(&mut guard)
 }
