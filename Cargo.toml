@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 limine = "0.6.3"
+spin = "0.10.0"
 
 [profile.dev]
 panic = "abort"

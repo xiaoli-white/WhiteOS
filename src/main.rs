@@ -1,17 +1,19 @@
 #![no_std]
 #![no_main]
 
+mod framebuffer;
+
 use core::arch::asm;
 use core::panic::PanicInfo;
 
 use limine::BaseRevision;
-use limine::request::FramebufferRequest;
+use spin::Mutex;
+
+use crate::framebuffer::Console;
+use core::fmt::Write;
 
 #[used]
 static BASE_REVISION: BaseRevision = BaseRevision::new();
-
-#[used]
-static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
 fn hcf() -> ! {
     loop {
@@ -31,6 +33,9 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn kernel_main() -> ! {
     assert!(BASE_REVISION.is_supported());
 
+    let mut console = Console::new();
+    write!(console, "Hello, kernel!\n");
+    /*
     if let Some(framebuffer) = FRAMEBUFFER_REQUEST
         .response()
         .and_then(|resp| resp.framebuffers().first())
@@ -58,6 +63,7 @@ pub extern "C" fn kernel_main() -> ! {
             }
         }
     }
+    */
 
     hcf();
 }
