@@ -1,4 +1,5 @@
 use core::fmt;
+
 use limine::{framebuffer::Framebuffer, request::FramebufferRequest};
 use spin::{Mutex, Once};
 

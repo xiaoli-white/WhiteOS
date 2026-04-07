@@ -2,13 +2,17 @@
 #![no_main]
 
 mod console;
+mod logger;
 
 use core::arch::asm;
 use core::panic::PanicInfo;
 
 use limine::BaseRevision;
 
-use crate::console::{Console, init_console, with_console};
+use crate::{
+    console::{init_console, with_console},
+    logger::init_logger,
+};
 use core::fmt::Write;
 
 #[used]
@@ -33,9 +37,10 @@ pub extern "C" fn kernel_main() -> ! {
     assert!(BASE_REVISION.is_supported());
 
     init_console();
+    init_logger();
 
     with_console(|console| {
-        write!(console, "Hello, kernel!");
+        writeln!(console, "Hello, kernel!");
     });
     /*
     if let Some(framebuffer) = FRAMEBUFFER_REQUEST

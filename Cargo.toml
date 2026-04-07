@@ -6,6 +6,11 @@ edition = "2024"
 [dependencies]
 limine = "0.6.3"
 spin = "0.10.0"
+log = { version = "0.4.29", features = [
+    "max_level_debug",
+    "release_max_level_warn",
+] }
+polished_serial_logging = "0.1.2"
 
 [profile.dev]
 panic = "abort"
