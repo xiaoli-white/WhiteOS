@@ -3,7 +3,7 @@ use core::fmt;
 use limine::{framebuffer::Framebuffer, request::FramebufferRequest};
 use spin::{Mutex, Once};
 
-const FONT_FILE: &[u8] = include_bytes!("../../fonts/Lat7-Terminus16.psf");
+const FONT_FILE: &[u8] = include_bytes!("../fonts/Lat7-Terminus16.psf");
 
 pub const FONT_WIDTH: usize = 8;
 pub const FONT_HEIGHT: usize = FONT_FILE[3] as usize;
