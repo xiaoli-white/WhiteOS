@@ -1,7 +1,9 @@
 pub mod frame;
+pub mod heap;
 
 use limine::request::{HhdmRequest, MemmapRequest};
 use x86_64::registers::control::Cr3;
+use x86_64::structures::paging::OffsetPageTable;
 use x86_64::{VirtAddr, structures::paging::PageTable};
 
 #[used]
@@ -19,4 +21,13 @@ pub fn active_level_4_table() -> &'static mut PageTable {
     let page_table_ptr: *mut PageTable = virt.as_mut_ptr();
 
     unsafe { &mut *page_table_ptr }
+}
+pub fn init() -> OffsetPageTable<'static> {
+    unsafe {
+        let level_4_table = active_level_4_table();
+        OffsetPageTable::new(
+            level_4_table,
+            VirtAddr::new(HHDM_REQUEST.response().unwrap().offset),
+        )
+    }
 }

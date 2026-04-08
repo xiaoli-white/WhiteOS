@@ -12,6 +12,7 @@ log = { version = "0.4.29", features = [
 ] }
 polished_serial_logging = "0.1.2"
 x86_64 = "0.15.4"
+linked_list_allocator = "0.10.5"
 
 [profile.dev]
 panic = "abort"

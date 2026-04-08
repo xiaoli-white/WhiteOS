@@ -1,5 +1,7 @@
 #![no_std]
 
+extern crate alloc;
+
 pub mod console;
 pub mod logger;
 pub mod memory;
@@ -21,8 +23,6 @@ pub fn hcf() -> ! {
 
 #[panic_handler]
 pub fn panic(info: &PanicInfo) -> ! {
-    with_console(|console| {
-        writeln!(console, "{}", info).unwrap();
-    });
+    with_console(|console| writeln!(console, "{}", info).unwrap());
     hcf()
 }
