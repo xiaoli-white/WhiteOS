@@ -7,9 +7,10 @@ use WhiteOS::{
     console::{init_console, with_console},
     hcf,
     logger::init_logger,
-    memory::active_level_4_table,
+    memory::{HHDM_REQUEST, PhysicalFrameAllocator, active_level_4_table},
 };
 use core::fmt::Write;
+use x86_64::{VirtAddr, structures::paging::PageTable};
 
 #[used]
 static BASE_REVISION: BaseRevision = BaseRevision::new();
@@ -31,6 +32,18 @@ pub extern "C" fn kernel_main() -> ! {
             with_console(|console| {
                 writeln!(console, "L4 Entry {}: {:?}", i, entry).unwrap();
             });
+            let phys = entry.frame().unwrap().start_address();
+            let virt = phys.as_u64() + HHDM_REQUEST.response().unwrap().offset;
+            let ptr = VirtAddr::new(virt).as_mut_ptr();
+            let l3_table: &PageTable = unsafe { &*ptr };
+
+            for (i, entry) in l3_table.iter().enumerate() {
+                if !entry.is_unused() {
+                    with_console(|console| {
+                        writeln!(console, "  L3 Entry {}: {:?}", i, entry).unwrap();
+                    });
+                }
+            }
         }
     }
     /*
