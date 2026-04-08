@@ -7,7 +7,7 @@ use WhiteOS::{
     console::{init_console, with_console},
     hcf,
     logger::init_logger,
-    memory::{HHDM_REQUEST, PhysicalFrameAllocator, active_level_4_table},
+    memory::{HHDM_REQUEST, active_level_4_table},
 };
 use core::fmt::Write;
 use x86_64::{VirtAddr, structures::paging::PageTable};
