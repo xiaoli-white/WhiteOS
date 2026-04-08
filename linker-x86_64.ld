@@ -26,14 +26,14 @@ SECTIONS
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     .data : {
-        *(.data .data.*)
+        *(.data .data.*) 
     } :data
 
     .limine_requests : {
         KEEP(*(.limine_requests_start))
         KEEP(*(.limine_requests))
         KEEP(*(.limine_requests_end))
-    }
+    } :data
 
     .bss : {
         *(.bss .bss.*)

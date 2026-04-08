@@ -7,6 +7,7 @@ use WhiteOS::{
     console::{init_console, with_console},
     hcf,
     logger::init_logger,
+    memory::active_level_4_table,
 };
 use core::fmt::Write;
 
@@ -21,8 +22,17 @@ pub extern "C" fn kernel_main() -> ! {
     init_logger();
 
     with_console(|console| {
-        writeln!(console, "Hello, kernel!");
+        writeln!(console, "Hello, kernel!").unwrap();
     });
+    let l4_table = active_level_4_table();
+
+    for (i, entry) in l4_table.iter().enumerate() {
+        if !entry.is_unused() {
+            with_console(|console| {
+                writeln!(console, "L4 Entry {}: {:?}", i, entry).unwrap();
+            });
+        }
+    }
     /*
     if let Some(framebuffer) = FRAMEBUFFER_REQUEST
         .response()

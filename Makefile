@@ -37,7 +37,7 @@ all: iso
 
 build: $(KERNEL_ELF)
 
-$(KERNEL_ELF): src/main.rs build.rs linker-x86_64.ld $(TARGET_SPEC) Cargo.toml
+$(KERNEL_ELF): src/* build.rs linker-x86_64.ld $(TARGET_SPEC) Cargo.toml
 	$(CARGO) build $(CARGO_FLAGS)
 
 limine: $(LIMINE_DIR)/limine-bios.sys

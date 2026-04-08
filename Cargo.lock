@@ -10,6 +10,7 @@ dependencies = [
  "log",
  "polished_serial_logging",
  "spin 0.10.0",
+ "x86_64",
 ]
 
 [[package]]

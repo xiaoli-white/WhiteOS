@@ -2,9 +2,13 @@
 
 pub mod console;
 pub mod logger;
+pub mod memory;
 
 use core::arch::asm;
+use core::fmt::Write;
 use core::panic::PanicInfo;
+
+use crate::console::with_console;
 
 pub fn hcf() -> ! {
     loop {
@@ -16,6 +20,9 @@ pub fn hcf() -> ! {
 }
 
 #[panic_handler]
-pub fn panic(_info: &PanicInfo) -> ! {
+pub fn panic(info: &PanicInfo) -> ! {
+    with_console(|console| {
+        writeln!(console, "{}", info).unwrap();
+    });
     hcf()
 }
