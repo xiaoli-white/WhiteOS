@@ -1,6 +1,7 @@
 use core::fmt;
 
 use limine::{framebuffer::Framebuffer, request::FramebufferRequest};
+use polished_serial_logging::serial_write_str;
 use spin::{Mutex, Once};
 
 const FONT_FILE: &[u8] = include_bytes!("../fonts/Lat7-Terminus16.psf");
@@ -158,6 +159,7 @@ impl Console {
 
 impl fmt::Write for Console {
     fn write_str(&mut self, s: &str) -> fmt::Result {
+        serial_write_str(s);
         for c in s.chars() {
             self.write_char(c);
         }
