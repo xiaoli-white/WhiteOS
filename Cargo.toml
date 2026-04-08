@@ -18,6 +18,11 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[lib]
+name = "WhiteOS"
+test = false
+bench = false
+
 [[bin]]
 name = "WhiteOS"
 test = false

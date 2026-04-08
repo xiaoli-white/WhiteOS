@@ -1,36 +1,17 @@
 #![no_std]
 #![no_main]
 
-mod console;
-mod logger;
-
-use core::arch::asm;
-use core::panic::PanicInfo;
-
 use limine::BaseRevision;
 
-use crate::{
+use WhiteOS::{
     console::{init_console, with_console},
+    hcf,
     logger::init_logger,
 };
 use core::fmt::Write;
 
 #[used]
 static BASE_REVISION: BaseRevision = BaseRevision::new();
-
-fn hcf() -> ! {
-    loop {
-        unsafe {
-            #[cfg(target_arch = "x86_64")]
-            asm!("hlt");
-        }
-    }
-}
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    hcf()
-}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kernel_main() -> ! {
