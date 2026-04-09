@@ -7,9 +7,7 @@ use limine::BaseRevision;
 
 use WhiteOS::{
     console::{init_console, with_console},
-    gdt::init_gdt,
     hcf, init_kernel,
-    interrupt::init_idt,
     logger::init_logger,
     memory::{self, HHDM_REQUEST, active_level_4_table, frame::PhysicalFrameAllocator, heap},
 };

@@ -9,7 +9,6 @@ pub mod interrupt;
 pub mod logger;
 pub mod memory;
 
-use core::arch::asm;
 use core::fmt::Write;
 use core::panic::PanicInfo;
 
@@ -17,7 +16,7 @@ use x86_64::instructions;
 
 use crate::console::with_console;
 use crate::gdt::init_gdt;
-use crate::interrupt::{init_idt, init_pcis};
+use crate::interrupt::{init_idt, pics::init_pcis};
 
 pub struct Locked<A> {
     inner: spin::Mutex<A>,
@@ -42,10 +41,8 @@ pub fn init_kernel() {
 
 pub fn hcf() -> ! {
     loop {
-        unsafe {
-            #[cfg(target_arch = "x86_64")]
-            asm!("hlt");
-        }
+        #[cfg(target_arch = "x86_64")]
+        x86_64::instructions::hlt();
     }
 }
 

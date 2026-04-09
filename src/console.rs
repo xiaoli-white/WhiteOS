@@ -3,6 +3,7 @@ use core::fmt;
 use limine::{framebuffer::Framebuffer, request::FramebufferRequest};
 use polished_serial_logging::serial_write_str;
 use spin::{Mutex, Once};
+use x86_64::instructions;
 
 const FONT_FILE: &[u8] = include_bytes!("../fonts/Lat7-Terminus16.psf");
 
@@ -176,7 +177,9 @@ pub fn with_console<F, R>(f: F) -> R
 where
     F: FnOnce(&mut Console) -> R,
 {
-    let console = CONSOLE.get().expect("Console not initialized");
-    let mut guard = console.lock();
-    f(&mut guard)
+    instructions::interrupts::without_interrupts(|| {
+        let console = CONSOLE.get().expect("Console not initialized");
+        let mut guard = console.lock();
+        f(&mut guard)
+    })
 }
