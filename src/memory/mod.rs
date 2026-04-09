@@ -31,3 +31,6 @@ pub fn init() -> OffsetPageTable<'static> {
         )
     }
 }
+fn align_up(addr: usize, align: usize) -> usize {
+    (addr + align - 1) & !(align - 1)
+}
