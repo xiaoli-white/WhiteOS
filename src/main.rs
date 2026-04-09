@@ -8,7 +8,7 @@ use limine::BaseRevision;
 use WhiteOS::{
     console::{init_console, with_console},
     gdt::init_gdt,
-    hcf,
+    hcf, init_kernel,
     interrupt::init_idt,
     logger::init_logger,
     memory::{self, HHDM_REQUEST, active_level_4_table, frame::PhysicalFrameAllocator, heap},
@@ -26,8 +26,7 @@ pub extern "C" fn kernel_main() -> ! {
 
     init_console();
     init_logger();
-    init_gdt();
-    init_idt();
+    init_kernel();
 
     with_console(|console| writeln!(console, "Hello, kernel!").unwrap());
     let l4_table = active_level_4_table();

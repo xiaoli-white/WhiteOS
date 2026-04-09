@@ -13,12 +13,15 @@ use core::arch::asm;
 use core::fmt::Write;
 use core::panic::PanicInfo;
 
+use x86_64::instructions;
+
 use crate::console::with_console;
+use crate::gdt::init_gdt;
+use crate::interrupt::{init_idt, init_pcis};
 
 pub struct Locked<A> {
     inner: spin::Mutex<A>,
 }
-
 impl<A> Locked<A> {
     pub const fn new(inner: A) -> Self {
         Locked {
@@ -29,6 +32,12 @@ impl<A> Locked<A> {
     pub fn lock(&self) -> spin::MutexGuard<A> {
         self.inner.lock()
     }
+}
+pub fn init_kernel() {
+    init_gdt();
+    init_idt();
+    init_pcis();
+    instructions::interrupts::enable();
 }
 
 pub fn hcf() -> ! {
