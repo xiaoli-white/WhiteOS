@@ -1,8 +1,11 @@
 #![no_std]
+#![feature(abi_x86_interrupt)]
 
 extern crate alloc;
 
 pub mod console;
+pub mod gdt;
+pub mod interrupt;
 pub mod logger;
 pub mod memory;
 

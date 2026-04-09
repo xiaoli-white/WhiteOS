@@ -6,6 +6,7 @@ version = 4
 name = "WhiteOS"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "limine",
  "log",
  "polished_serial_logging",
