@@ -8,6 +8,7 @@ pub mod gdt;
 pub mod interrupt;
 pub mod logger;
 pub mod memory;
+pub mod task;
 
 use core::fmt::Write;
 use core::panic::PanicInfo;

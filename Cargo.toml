@@ -16,6 +16,7 @@ lazy_static = { version = "1.5.0", default-features = false, features = [
     "spin_no_std",
 ] }
 pic8259 = "0.11.0"
+anyhow = { version = "1.0.102", default-features = false }
 
 [profile.dev]
 panic = "abort"

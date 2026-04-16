@@ -35,6 +35,11 @@ pub struct LinkedListAllocator {
     head: ListNode,
 }
 
+impl Default for LinkedListAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl LinkedListAllocator {
     pub const fn new() -> Self {
         Self {
